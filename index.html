@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RFI Management Dashboard</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- React & ReactDOM -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <!-- Babel for JSX compilation -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #0f172a;
+      color: #f8fafc;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #1e293b;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #475569;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #64748b;
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen">
+  <div id="root"></div>
+
+  <!-- Saved application data. Updated by the Save HTML button. -->
+  <script id="rfi-embedded-data" type="application/json">{"projectName":"Sample Project A","rfis":[{"id":"RFI-2026-003","title":"Deck Edge Angle Attachment at Cantilever","project":"Civic Plaza Expansion","specRef":"Spec 053100 / Dwg S-304","gridLocation":"North Elevation, L2","requestor":"BuildRight Metal Decking","recipient":"Architect of Record","dateIssued":"2026-10-05","responseDate":"2026-10-15","status":"Closed","description":"Clarify structural angle attachment detail for metal deck pour stop at 3-foot cantilever zone.","proposedSolution":"Use L4x4x1/4 edge angle welded at 12 inches O.C. to top flange of perimeter beam.","response":"Approved as submitted. Refer to supplemental sketch SK-S-04 for field welding details."},{"id":"RFI-2026-005","title":"Fireproofing Thickness Specification Clarification","project":"Civic Plaza Expansion","specRef":"Spec 078100 / Dwg A-702","gridLocation":"Building Wide","requestor":"Shield Fireproofing LLC","recipient":"General Contractor","dateIssued":"2026-10-10","responseDate":"2026-10-20","status":"Closed","description":"Discrepancy between UL design listing X603 (1.5 hr) and architectural specifications calling for 2-hr fire rating on exposed perimeter columns.","proposedSolution":"Apply UL design Y704 with 1-1/16\" thickness to achieve uniform 2-hour rating.","response":"Confirmed. Proceed with UL Y704 for all exterior exposed steel columns."},{"id":"RFI-2026-001","title":"W24x68 Beam Interference with HVAC Duct","project":"Metro Center Tower A","specRef":"Spec 051200 / Dwg S-201","gridLocation":"Grid B-4, Level 3","requestor":"Apex Steel Structures","recipient":"Structural Engineer (EOR)","dateIssued":"2026-09-12","responseDate":"","status":"Open","description":"HVAC main supply duct (36x18) clashes with structural steel beam W24x68 web at Level 3. Clearance is reduced by 8 inches.","proposedSolution":"Lower HVAC duct by 10 inches or provide web penetration detail as per AISC Design Guide 2.","response":""},{"id":"RFI-2026-002","title":"Foundation Anchor Bolt Edge Distance Conflict","project":"Metro Center Tower A","specRef":"Spec 033000 / Dwg S-102","gridLocation":"Grid Line 12-D","requestor":"Apex Steel Structures","recipient":"General Contractor","dateIssued":"2026-09-14","responseDate":"","status":"Pending Review","description":"Concrete pedestal dimension on Drawing S-102 provides only 2.5 inches of edge distance for 1-1/4\" anchor rods. ACI 318 requires minimum 4 inches.","proposedSolution":"Enlarge concrete pedestal by 4 inches on North face or shift baseplate slot orientation.","response":"Architectural coordination in progress to ensure enlargement does not encroach into architectural finish zone."},{"id":"RFI-2026-004","title":"Rebar Congestion at Column C-4 Splice Zone","project":"Metro Center Tower A","specRef":"Spec 032000 / Dwg S-501","gridLocation":"Column C-4, Level 5","requestor":"Precision Rebar Corp","recipient":"Structural Lead","dateIssued":"2026-10-18","responseDate":"","status":"Open","description":"Lap splicing of #11 rebar along with column tie density creates clear spacing less than aggregate size (3/4 inch). Concrete placement will be restricted.","proposedSolution":"Request approval to switch to mechanical couplers (T-Series) in lieu of lap splices at Level 5.","response":""},{"title":"Beam","specRef":"1/S100","gridLocation":"SA/S1","requestor":"NA","recipient":"Structural Engineer (EOR)","dateIssued":"2026-10-23","description":"Sample","proposedSolution":"","id":"RFI-2026-006","project":"Sample Project B","responseDate":"","status":"Open","response":""}]}</script>
+
+  <script type="text/babel">
+    const { useState, useMemo, useEffect, useRef } = React;
+
+    // Initial default seed dataset (Sorted Oldest to Newest as default)
+    const INITIAL_RFIS = [
+      {
+        id: 'RFI-2026-003',
+        title: 'Deck Edge Angle Attachment at Cantilever',
+        project: 'Civic Plaza Expansion',
+        specRef: 'Spec 053100 / Dwg S-304',
+        gridLocation: 'North Elevation, L2',
+        requestor: 'BuildRight Metal Decking',
+        recipient: 'Architect of Record',
+        dateIssued: '2026-10-05',
+        responseDate: '2026-10-15',
+        status: 'Closed',
+        description: 'Clarify structural angle attachment detail for metal deck pour stop at 3-foot cantilever zone.',
+        proposedSolution: 'Use L4x4x1/4 edge angle welded at 12 inches O.C. to top flange of perimeter beam.',
+        response: 'Approved as submitted. Refer to supplemental sketch SK-S-04 for field welding details.',
+      },
+      {
+        id: 'RFI-2026-005',
+        title: 'Fireproofing Thickness Specification Clarification',
+        project: 'Civic Plaza Expansion',
+        specRef: 'Spec 078100 / Dwg A-702',
+        gridLocation: 'Building Wide',
+        requestor: 'Shield Fireproofing LLC',
+        recipient: 'General Contractor',
+        dateIssued: '2026-10-10',
+        responseDate: '2026-10-20',
+        status: 'Closed',
+        description: 'Discrepancy between UL design listing X603 (1.5 hr) and architectural specifications calling for 2-hr fire rating on exposed perimeter columns.',
+        proposedSolution: 'Apply UL design Y704 with 1-1/16" thickness to achieve uniform 2-hour rating.',
+        response: 'Confirmed. Proceed with UL Y704 for all exterior exposed steel columns.',
+      },
+      {
+        id: 'RFI-2026-001',
+        title: 'W24x68 Beam Interference with HVAC Duct',
+        project: 'Metro Center Tower A',
+        specRef: 'Spec 051200 / Dwg S-201',
+        gridLocation: 'Grid B-4, Level 3',
+        requestor: 'Apex Steel Structures',
+        recipient: 'Structural Engineer (EOR)',
+        dateIssued: '2026-10-12',
+        responseDate: '',
+        status: 'Open',
+        description: 'HVAC main supply duct (36x18) clashes with structural steel beam W24x68 web at Level 3. Clearance is reduced by 8 inches.',
+        proposedSolution: 'Lower HVAC duct by 10 inches or provide web penetration detail as per AISC Design Guide 2.',
+        response: '',
+      },
+      {
+        id: 'RFI-2026-002',
+        title: 'Foundation Anchor Bolt Edge Distance Conflict',
+        project: 'Metro Center Tower A',
+        specRef: 'Spec 033000 / Dwg S-102',
+        gridLocation: 'Grid Line 12-D',
+        requestor: 'Apex Steel Structures',
+        recipient: 'General Contractor',
+        dateIssued: '2026-10-14',
+        responseDate: '',
+        status: 'Pending Review',
+        description: 'Concrete pedestal dimension on Drawing S-102 provides only 2.5 inches of edge distance for 1-1/4" anchor rods. ACI 318 requires minimum 4 inches.',
+        proposedSolution: 'Enlarge concrete pedestal by 4 inches on North face or shift baseplate slot orientation.',
+        response: 'Architectural coordination in progress to ensure enlargement does not encroach into architectural finish zone.',
+      },
+      {
+        id: 'RFI-2026-004',
+        title: 'Rebar Congestion at Column C-4 Splice Zone',
+        project: 'Metro Center Tower A',
+        specRef: 'Spec 032000 / Dwg S-501',
+        gridLocation: 'Column C-4, Level 5',
+        requestor: 'Precision Rebar Corp',
+        recipient: 'Structural Lead',
+        dateIssued: '2026-10-18',
+        responseDate: '',
+        status: 'Open',
+        description: 'Lap splicing of #11 rebar along with column tie density creates clear spacing less than aggregate size (3/4 inch). Concrete placement will be restricted.',
+        proposedSolution: 'Request approval to switch to mechanical couplers (T-Series) in lieu of lap splices at Level 5.',
+        response: '',
+      },
+      {
+        id: 'RFI-2026-006',
+        title: 'Beam',
+        project: 'Sample Project B',
+        specRef: '1/S100',
+        gridLocation: 'SA/S1',
+        requestor: 'NA',
+        recipient: 'Structural Engineer (EOR)',
+        dateIssued: '2026-10-23',
+        responseDate: '',
+        status: 'Open',
+        description: 'Sample',
+        proposedSolution: '',
+        response: ''
+      }
+    ];
+
+    let rfiHtmlFileHandle = null;
+
+    function getEmbeddedRfiData() {
+      try {
+        const element = document.getElementById('rfi-embedded-data');
+        return element ? JSON.parse(element.textContent || '{}') : {};
+      } catch (error) {
+        console.warn('Could not read embedded RFI data.', error);
+        return {};
+      }
+    }
+
+    function RFIDashboard() {
+      const [projectName, setProjectName] = useState(() => {
+        const embedded = getEmbeddedRfiData();
+        if (typeof embedded.projectName === 'string' && embedded.projectName) {
+          return embedded.projectName;
+        }
+        const savedProject = localStorage.getItem('rfi_dashboard_project');
+        return savedProject || 'Metro Center Tower A';
+      });
+
+      const [rfis, setRfis] = useState(() => {
+        const embedded = getEmbeddedRfiData();
+        if (Array.isArray(embedded.rfis)) return embedded.rfis;
+        const savedData = localStorage.getItem('rfi_dashboard_data');
+        if (savedData) {
+          try {
+            return JSON.parse(savedData);
+          } catch (e) {
+            console.error('Failed to parse local stored RFI data', e);
+          }
+        }
+        return INITIAL_RFIS;
+      });
+
+      const [searchTerm, setSearchTerm] = useState('');
+      const [statusFilter, setStatusFilter] = useState('All');
+      
+      // Sort state: default 'oldest' (Oldest at top, newest at bottom)
+      const [sortOrder, setSortOrder] = useState('oldest'); 
+      const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
+      const sortMenuRef = useRef(null);
+
+      const [selectedRfi, setSelectedRfi] = useState(null);
+      const [isModalOpen, setIsModalOpen] = useState(false);
+      const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+      const [notificationMessage, setNotificationMessage] = useState('');
+
+      const [newRfi, setNewRfi] = useState({
+        title: '',
+        specRef: '',
+        gridLocation: '',
+        requestor: '',
+        recipient: 'Structural Engineer (EOR)',
+        dateIssued: new Date().toISOString().split('T')[0],
+        description: '',
+        proposedSolution: ''
+      });
+
+      const [editForm, setEditForm] = useState({
+        title: '',
+        specRef: '',
+        gridLocation: '',
+        recipient: '',
+        dateIssued: '',
+        responseDate: '',
+        description: '',
+        proposedSolution: '',
+        response: '',
+        status: 'Open'
+      });
+
+      const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+      const [isSaveConfirmOpen, setIsSaveConfirmOpen] = useState(false);
+      const [isResponseDateModalOpen, setIsResponseDateModalOpen] = useState(false);
+      const [pendingResponseDate, setPendingResponseDate] = useState('');
+
+      // Close sort menu when clicking outside
+      useEffect(() => {
+        function handleClickOutside(event) {
+          if (sortMenuRef.current && !sortMenuRef.current.contains(event.target)) {
+            setIsSortMenuOpen(false);
+          }
+        }
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+      }, []);
+
+      useEffect(() => {
+        if (selectedRfi) {
+          setEditForm({
+            title: selectedRfi.title || '',
+            specRef: selectedRfi.specRef || '',
+            gridLocation: selectedRfi.gridLocation || '',
+            recipient: selectedRfi.recipient || '',
+            dateIssued: selectedRfi.dateIssued || '',
+            responseDate: selectedRfi.responseDate || '',
+            description: selectedRfi.description || '',
+            proposedSolution: selectedRfi.proposedSolution || '',
+            response: selectedRfi.response || '',
+            status: selectedRfi.status || 'Open'
+          });
+          setPendingResponseDate(selectedRfi.responseDate || new Date().toISOString().split('T')[0]);
+        }
+      }, [selectedRfi]);
+
+      useEffect(() => {
+        if (window.lucide) {
+          window.lucide.createIcons();
+        }
+      });
+
+      const triggerNotification = (msg) => {
+        setNotificationMessage(msg);
+        setTimeout(() => {
+          setNotificationMessage('');
+        }, 3500);
+      };
+
+      const persistToLocalStorage = (updatedRfis, updatedProject) => {
+        localStorage.setItem('rfi_dashboard_data', JSON.stringify(updatedRfis));
+        localStorage.setItem('rfi_dashboard_project', updatedProject);
+      };
+
+      // Filtering and sorting logic matching active status, search input, and date sort order
+      const filteredRFIs = useMemo(() => {
+        let list = rfis.filter(rfi => {
+          const matchesSearch = 
+            searchTerm.trim() === '' ||
+            rfi.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            rfi.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            rfi.specRef.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            rfi.requestor.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (rfi.recipient && rfi.recipient.toLowerCase().includes(searchTerm.toLowerCase()));
+
+          const matchesStatus = 
+            statusFilter === 'All' || 
+            rfi.status.trim().toLowerCase() === statusFilter.trim().toLowerCase();
+
+          return matchesSearch && matchesStatus;
+        });
+
+        // Apply sorting based on submission date / RFI ID sequence
+        return list.sort((a, b) => {
+          const dateA = new Date(a.dateIssued || '1970-01-01').getTime();
+          const dateB = new Date(b.dateIssued || '1970-01-01').getTime();
+          
+          if (dateA !== dateB) {
+            return sortOrder === 'oldest' ? dateA - dateB : dateB - dateA;
+          }
+          // Secondary fallback sort by RFI ID if dates are identical
+          return sortOrder === 'oldest' 
+            ? a.id.localeCompare(b.id, undefined, { numeric: true }) 
+            : b.id.localeCompare(a.id, undefined, { numeric: true });
+        });
+      }, [rfis, searchTerm, statusFilter, sortOrder]);
+
+      const metrics = useMemo(() => {
+        const total = rfis.length;
+        const open = rfis.filter(r => r.status === 'Open').length;
+        const pending = rfis.filter(r => r.status === 'Pending Review').length;
+        const closed = rfis.filter(r => r.status === 'Closed').length;
+        return { total, open, pending, closed };
+      }, [rfis]);
+
+      const handleCreateRFI = (e) => {
+        e.preventDefault();
+        const nextIdNumber = rfis.length + 1;
+        const createdRFI = {
+          ...newRfi,
+          id: `RFI-2026-00${nextIdNumber}`,
+          project: projectName,
+          dateIssued: newRfi.dateIssued || new Date().toISOString().split('T')[0],
+          responseDate: '',
+          status: 'Open',
+          response: ''
+        };
+        
+        // 1. Placed automatically at the bottom row of the data shown
+        const updatedList = [...rfis, createdRFI];
+        setRfis(updatedList);
+        persistToLocalStorage(updatedList, projectName);
+
+        setIsCreateModalOpen(false);
+        setNewRfi({
+          title: '',
+          specRef: '',
+          gridLocation: '',
+          requestor: '',
+          recipient: 'Structural Engineer (EOR)',
+          dateIssued: new Date().toISOString().split('T')[0],
+          description: '',
+          proposedSolution: ''
+        });
+        triggerNotification('New RFI created at bottom row!');
+      };
+
+      const handleSaveAttempt = () => {
+        if (editForm.status === 'Closed') {
+          setIsResponseDateModalOpen(true);
+        } else {
+          setIsSaveConfirmOpen(true);
+        }
+      };
+
+      const handleConfirmResponseDate = () => {
+        setEditForm(prev => ({ ...prev, responseDate: pendingResponseDate }));
+        setIsResponseDateModalOpen(false);
+        setIsSaveConfirmOpen(true);
+      };
+
+      const handleConfirmSave = () => {
+        const finalResponseDate = editForm.status === 'Closed' ? (editForm.responseDate || pendingResponseDate) : '';
+
+        const updatedList = rfis.map(r => r.id === selectedRfi.id ? { 
+          ...r, 
+          title: editForm.title,
+          specRef: editForm.specRef,
+          gridLocation: editForm.gridLocation,
+          recipient: editForm.recipient,
+          dateIssued: editForm.dateIssued,
+          responseDate: finalResponseDate,
+          description: editForm.description,
+          proposedSolution: editForm.proposedSolution,
+          response: editForm.response,
+          status: editForm.status
+        } : r);
+
+        setRfis(updatedList);
+        persistToLocalStorage(updatedList, projectName);
+
+        setSelectedRfi(prev => ({ 
+          ...prev, 
+          title: editForm.title,
+          specRef: editForm.specRef,
+          gridLocation: editForm.gridLocation,
+          recipient: editForm.recipient,
+          dateIssued: editForm.dateIssued,
+          responseDate: finalResponseDate,
+          description: editForm.description,
+          proposedSolution: editForm.proposedSolution,
+          response: editForm.response,
+          status: editForm.status
+        }));
+        
+        setIsSaveConfirmOpen(false);
+        setIsModalOpen(false);
+        triggerNotification('RFI record updated!');
+      };
+
+      const handleConfirmDelete = () => {
+        if (selectedRfi) {
+          const updatedList = rfis.filter(r => r.id !== selectedRfi.id);
+          setRfis(updatedList);
+          persistToLocalStorage(updatedList, projectName);
+
+          setIsDeleteConfirmOpen(false);
+          setIsModalOpen(false);
+          setSelectedRfi(null);
+          triggerNotification('RFI deleted!');
+        }
+      };
+
+      const handleSaveHtmlFile = async () => {
+        try {
+          if (!('showOpenFilePicker' in window)) {
+            alert('Direct saving is not supported in this browser. Please use a current desktop version of Chrome or Edge.');
+            return;
+          }
+
+          if (!rfiHtmlFileHandle) {
+            const handles = await window.showOpenFilePicker({
+              multiple: false,
+              types: [{
+                description: 'RFI Dashboard HTML file',
+                accept: { 'text/html': ['.html', '.htm'] }
+              }]
+            });
+            rfiHtmlFileHandle = handles[0];
+          }
+
+          let permission = await rfiHtmlFileHandle.queryPermission({ mode: 'readwrite' });
+          if (permission !== 'granted') {
+            permission = await rfiHtmlFileHandle.requestPermission({ mode: 'readwrite' });
+          }
+          if (permission !== 'granted') {
+            throw new Error('Write permission was not granted. Please allow access to the HTML file.');
+          }
+
+          persistToLocalStorage(rfis, projectName);
+          const dataElement = document.getElementById('rfi-embedded-data');
+          dataElement.textContent = JSON.stringify({
+            projectName,
+            rfis
+          }).replace(/</g, '\\u003c');
+
+          const originalFile = await rfiHtmlFileHandle.getFile();
+          const originalSource = await originalFile.text();
+          const embeddedJson = JSON.stringify({ projectName, rfis }).replace(/</g, '\\u003c');
+          const dataBlockPattern = /(<script\s+id=["']rfi-embedded-data["']\s+type=["']application\/json["']>)[\s\S]*?(<\/script>)/i;
+
+          if (!dataBlockPattern.test(originalSource)) {
+            throw new Error('The selected HTML file does not contain the RFI saved-data block. Please select the updated dashboard HTML file.');
+          }
+
+          const htmlSource = originalSource.replace(
+            dataBlockPattern,
+            (_match, openingTag, closingTag) => openingTag + embeddedJson + closingTag
+          );
+
+          const writable = await rfiHtmlFileHandle.createWritable();
+          try {
+            await writable.write(htmlSource);
+            await writable.close();
+          } catch (writeError) {
+            await writable.abort();
+            throw writeError;
+          }
+
+          triggerNotification('HTML file and RFI data saved successfully!');
+        } catch (error) {
+          if (error.name === 'AbortError') return;
+          console.error('Unable to save HTML file:', error);
+          alert('Unable to save the HTML file. ' + (error.message || 'Please try again.'));
+        }
+      };
+
+      const handleExportCSV = () => {
+        if (filteredRFIs.length === 0) {
+          alert('No RFIs available to export in the current filtered view.');
+          return;
+        }
+
+        const headers = [
+          'RFI ID',
+          'Title',
+          'Project',
+          'Spec / Drawing Ref',
+          'Grid Location',
+          'Requestor',
+          'Recipient',
+          'RFI Submission Date',
+          'Status',
+          'RFI Response Date',
+          'Description',
+          'Proposed Solution',
+          'Response'
+        ];
+
+        const formatCSVValue = (val) => {
+          if (val === null || val === undefined) return '""';
+          const stringVal = String(val).replace(/"/g, '""');
+          return `"${stringVal}"`;
+        };
+
+        const csvRows = [];
+        csvRows.push(headers.join(','));
+
+        filteredRFIs.forEach(r => {
+          const row = [
+            formatCSVValue(r.id),
+            formatCSVValue(r.title),
+            formatCSVValue(r.project || projectName),
+            formatCSVValue(r.specRef),
+            formatCSVValue(r.gridLocation),
+            formatCSVValue(r.requestor),
+            formatCSVValue(r.recipient),
+            formatCSVValue(r.dateIssued),
+            formatCSVValue(r.status),
+            formatCSVValue(r.status === 'Closed' ? r.responseDate : ''),
+            formatCSVValue(r.description),
+            formatCSVValue(r.proposedSolution),
+            formatCSVValue(r.response)
+          ];
+          csvRows.push(row.join(','));
+        });
+
+        const csvString = csvRows.join('\n');
+        const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        const sanitizedProjectName = (projectName || 'Project').replace(/[^a-zA-Z0-9_-]/g, '_');
+        
+        link.setAttribute('href', url);
+        link.setAttribute('download', `RFI_Log_${sanitizedProjectName}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      };
+
+      const getStatusBadge = (status) => {
+        switch (status) {
+          case 'Open':
+            return <span class="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 whitespace-nowrap">Open</span>;
+          case 'Pending Review':
+            return <span class="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 whitespace-nowrap">Pending Review</span>;
+          case 'Closed':
+            return <span class="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 whitespace-nowrap">Closed</span>;
+          default:
+            return null;
+        }
+      };
+
+      return (
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Toast Notification */}
+          {notificationMessage && (
+            <div class="fixed top-5 right-5 z-[70] bg-emerald-600 text-white px-4 py-2.5 rounded-lg shadow-xl text-xs font-semibold flex items-center space-x-2 animate-bounce">
+              <i data-lucide="check-circle" class="w-4 h-4"></i>
+              <span>{notificationMessage}</span>
+            </div>
+          )}
+
+          {/* Header Bar */}
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-6 border-b border-slate-800">
+            <div>
+              <div class="flex items-center space-x-3">
+                <i data-lucide="building-2" class="w-8 h-8 text-amber-500"></i>
+                <h1 class="text-2xl font-bold text-white tracking-tight">RFI Management Console</h1>
+              </div>
+              
+              <div class="mt-2 flex items-center space-x-2">
+                <span class="text-xs text-slate-400 font-medium">Active Project:</span>
+                <input 
+                  type="text" 
+                  value={projectName}
+                  onChange={(e) => {
+                    setProjectName(e.target.value);
+                    persistToLocalStorage(rfis, e.target.value);
+                  }}
+                  placeholder="Enter Project Name..."
+                  class="bg-slate-800/80 hover:bg-slate-800 border border-slate-700 focus:border-amber-500 text-amber-400 text-sm font-semibold rounded-md px-2.5 py-1 focus:outline-none transition-colors w-64"
+                />
+              </div>
+            </div>
+
+            {/* Top Action Buttons */}
+            <div class="flex flex-wrap items-center gap-3">
+              <button
+                onClick={handleSaveHtmlFile}
+                class="inline-flex items-center justify-center px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-lg shadow-sm transition-all duration-200"
+                title="Save RFI data into this HTML file"
+              >
+                <i data-lucide="save" class="w-4 h-4 mr-1.5"></i>
+                Save HTML
+              </button>
+              <button 
+                onClick={() => setIsCreateModalOpen(true)}
+                class="inline-flex items-center justify-center px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-lg shadow-sm transition-all duration-200"
+              >
+                <i data-lucide="plus-circle" class="w-4 h-4 mr-1.5"></i>
+                New RFI Request
+              </button>
+            </div>
+          </div>
+
+          {/* Metric Cards */}
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 my-6">
+            <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4">
+              <div class="flex items-center justify-between">
+                <span class="text-sm font-medium text-slate-400">Total RFIs</span>
+                <i data-lucide="file-text" class="w-5 h-5 text-slate-400"></i>
+              </div>
+              <p class="text-2xl font-bold text-white mt-2">{metrics.total}</p>
+            </div>
+
+            <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4">
+              <div class="flex items-center justify-between">
+                <span class="text-sm font-medium text-amber-400">Open / Action Req.</span>
+                <i data-lucide="clock" class="w-5 h-5 text-amber-400"></i>
+              </div>
+              <p class="text-2xl font-bold text-amber-400 mt-2">{metrics.open}</p>
+            </div>
+
+            <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4">
+              <div class="flex items-center justify-between">
+                <span class="text-sm font-medium text-blue-400">Pending Review</span>
+                <i data-lucide="send" class="w-5 h-5 text-blue-400"></i>
+              </div>
+              <p class="text-2xl font-bold text-blue-400 mt-2">{metrics.pending}</p>
+            </div>
+
+            <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4">
+              <div class="flex items-center justify-between">
+                <span class="text-sm font-medium text-emerald-400">Closed RFIs</span>
+                <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-400"></i>
+              </div>
+              <p class="text-2xl font-bold text-emerald-400 mt-2">{metrics.closed}</p>
+            </div>
+          </div>
+
+          {/* Filters Bar */}
+          <div class="bg-slate-800/40 border border-slate-800 rounded-xl p-4 mb-6 flex flex-col md:flex-row gap-4 justify-between items-stretch md:items-center">
+            <div class="relative flex-1">
+              <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+              <input 
+                type="text"
+                placeholder="Search by RFI #, Title, Specification, or Recipient..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                class="w-full pl-9 pr-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500"
+              />
+            </div>
+
+            <div class="flex flex-wrap items-center gap-3">
+              <div class="flex items-center space-x-2">
+                <span class="text-xs text-slate-400 font-medium">Status:</span>
+                <select 
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  class="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg px-3 py-2 focus:outline-none focus:border-amber-500"
+                >
+                  <option value="All">All Statuses</option>
+                  <option value="Open">Open</option>
+                  <option value="Pending Review">Pending Review</option>
+                  <option value="Closed">Closed</option>
+                </select>
+              </div>
+
+              <button
+                onClick={handleExportCSV}
+                class="inline-flex items-center px-3 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 text-xs font-semibold rounded-lg transition-colors"
+                title="Export active filtered RFI register to CSV file"
+              >
+                <i data-lucide="download" class="w-3.5 h-3.5 mr-1.5"></i>
+                Export CSV
+              </button>
+            </div>
+          </div>
+
+          {/* Data Table */}
+          <div class="bg-slate-800/50 border border-slate-700/60 rounded-xl overflow-hidden shadow-xl">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse text-sm">
+                <thead>
+                  <tr class="bg-slate-900/80 border-b border-slate-700/80 text-xs text-slate-400 uppercase font-semibold">
+                    
+                    {/* 2. RFI NO. & TITLE Header with Three-Dots Pop-Up Sort Menu */}
+                    <th class="py-3.5 px-4 relative">
+                      <div class="flex items-center justify-between">
+                        <span>RFI NO. & TITLE</span>
+                        <div class="relative" ref={sortMenuRef}>
+                          <button 
+                            type="button"
+                            onClick={() => setIsSortMenuOpen(!isSortMenuOpen)}
+                            class="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-amber-400 transition-colors focus:outline-none"
+                            title="Sort RFI Data Options"
+                          >
+                            <i data-lucide="more-vertical" class="w-4 h-4"></i>
+                          </button>
+
+                          {/* Pop-up Sort Window */}
+                          {isSortMenuOpen && (
+                            <div class="absolute left-0 mt-2 w-48 bg-slate-900 border border-slate-700 rounded-lg shadow-2xl z-20 py-1 normal-case font-normal text-slate-200">
+                              <div class="px-3 py-1.5 text-[10px] font-semibold text-slate-500 uppercase border-b border-slate-800">
+                                Sort Order Options
+                              </div>
+                              <button
+                                onClick={() => { setSortOrder('oldest'); setIsSortMenuOpen(false); }}
+                                class={`w-full text-left px-3 py-2 text-xs flex items-center justify-between hover:bg-slate-800 transition-colors ${sortOrder === 'oldest' ? 'text-amber-400 font-semibold' : 'text-slate-300'}`}
+                              >
+                                <span>Oldest to Newest</span>
+                                {sortOrder === 'oldest' && <i data-lucide="check" class="w-3.5 h-3.5 text-amber-400"></i>}
+                              </button>
+                              <button
+                                onClick={() => { setSortOrder('newest'); setIsSortMenuOpen(false); }}
+                                class={`w-full text-left px-3 py-2 text-xs flex items-center justify-between hover:bg-slate-800 transition-colors ${sortOrder === 'newest' ? 'text-amber-400 font-semibold' : 'text-slate-300'}`}
+                              >
+                                <span>Newest to Oldest</span>
+                                {sortOrder === 'newest' && <i data-lucide="check" class="w-3.5 h-3.5 text-amber-400"></i>}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </th>
+
+                    <th class="py-3.5 px-4">Spec / Location</th>
+                    <th class="py-3.5 px-4">Recipient</th>
+                    <th class="py-3.5 px-4">RFI Submission Date</th>
+                    <th class="py-3.5 px-4 text-center min-w-[140px] whitespace-nowrap">Status</th>
+                    <th class="py-3.5 px-4 text-center">RFI Response Date</th>
+                    <th class="py-3.5 px-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800">
+                  {filteredRFIs.length === 0 ? (
+                    <tr>
+                      <td colSpan="7" class="py-8 text-center text-slate-500">
+                        No RFIs found matching criteria.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredRFIs.map((rfi) => (
+                      <tr key={rfi.id} class="hover:bg-slate-800/80 transition-colors duration-150">
+                        <td class="py-3.5 px-4">
+                          <div class="font-semibold text-amber-400 text-xs font-mono">{rfi.id}</div>
+                          <div class="text-white font-medium line-clamp-1">{rfi.title}</div>
+                          <div class="text-xs text-slate-400 mt-0.5">{rfi.requestor}</div>
+                        </td>
+                        <td class="py-3.5 px-4">
+                          <div class="text-slate-300 text-xs">{rfi.specRef}</div>
+                          <div class="text-xs text-slate-500">{rfi.gridLocation}</div>
+                        </td>
+                        <td class="py-3.5 px-4 text-slate-300 text-xs">
+                          {rfi.recipient}
+                        </td>
+                        <td class="py-3.5 px-4 text-xs text-slate-300 font-mono">
+                          {rfi.dateIssued}
+                        </td>
+                        <td class="py-3.5 px-4 text-center min-w-[140px] whitespace-nowrap">
+                          {getStatusBadge(rfi.status)}
+                        </td>
+                        <td class="py-3.5 px-4 text-center text-xs font-mono text-emerald-400">
+                          {rfi.status === 'Closed' ? (rfi.responseDate || '-') : ''}
+                        </td>
+                        <td class="py-3.5 px-4 text-right">
+                          <button 
+                            onClick={() => { setSelectedRfi(rfi); setIsModalOpen(true); }}
+                            class="px-3 py-1.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 font-medium rounded transition-colors"
+                          >
+                            View / Edit
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* RFI Detail View/Edit Modal */}
+          {isModalOpen && selectedRfi && (
+            <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+              <div class="bg-slate-900 border border-slate-700 rounded-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl">
+                <div class="flex items-center justify-between p-5 border-b border-slate-800">
+                  <div class="w-full pr-4">
+                    <span class="text-xs font-mono font-bold text-amber-400">{selectedRfi.id}</span>
+                    <input 
+                      type="text" 
+                      value={editForm.title}
+                      onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                      placeholder="RFI Title..."
+                      class="w-full text-lg font-bold text-white mt-1 bg-slate-950/80 border border-slate-800 rounded-md px-2.5 py-1 focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+                  <button onClick={() => setIsModalOpen(false)} class="text-slate-400 hover:text-white">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                  </button>
+                </div>
+
+                <div class="p-6 space-y-6">
+                  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-slate-800/50 rounded-lg text-xs">
+                    <div>
+                      <span class="text-slate-400 block mb-1">RFI Submission Date:</span>
+                      <input 
+                        type="date" 
+                        value={editForm.dateIssued}
+                        onChange={(e) => setEditForm({ ...editForm, dateIssued: e.target.value })}
+                        class="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-200 focus:outline-none focus:border-amber-500 font-medium"
+                      />
+                    </div>
+                    <div>
+                      <span class="text-slate-400 block mb-1">Spec / Drawing:</span>
+                      <input 
+                        type="text" 
+                        value={editForm.specRef}
+                        onChange={(e) => setEditForm({ ...editForm, specRef: e.target.value })}
+                        class="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-200 focus:outline-none focus:border-amber-500 font-medium"
+                      />
+                    </div>
+                    <div>
+                      <span class="text-slate-400 block mb-1">Grid Location:</span>
+                      <input 
+                        type="text" 
+                        value={editForm.gridLocation}
+                        onChange={(e) => setEditForm({ ...editForm, gridLocation: e.target.value })}
+                        class="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-200 focus:outline-none focus:border-amber-500 font-medium"
+                      />
+                    </div>
+                    <div>
+                      <span class="text-slate-400 block mb-1">Recipient:</span>
+                      <input 
+                        type="text" 
+                        value={editForm.recipient}
+                        onChange={(e) => setEditForm({ ...editForm, recipient: e.target.value })}
+                        placeholder="Enter recipient..."
+                        class="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-200 focus:outline-none focus:border-amber-500 font-medium"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label class="block text-xs font-semibold text-amber-400 uppercase tracking-wider mb-2">
+                      1. Description of Issue / Ambiguity
+                    </label>
+                    <textarea 
+                      rows="3"
+                      value={editForm.description}
+                      onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                      class="w-full p-3 bg-slate-950/80 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-amber-500"
+                    ></textarea>
+                  </div>
+
+                  <div>
+                    <label class="block text-xs font-semibold text-amber-400 uppercase tracking-wider mb-2">
+                      2. Contractor's Proposed Solution
+                    </label>
+                    <textarea 
+                      rows="2"
+                      value={editForm.proposedSolution}
+                      onChange={(e) => setEditForm({ ...editForm, proposedSolution: e.target.value })}
+                      class="w-full p-3 bg-slate-950/80 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-amber-500"
+                    ></textarea>
+                  </div>
+
+                  <div>
+                    <label class="block text-xs font-semibold text-amber-400 uppercase tracking-wider mb-2">
+                      3. Structural / Design Team Response
+                    </label>
+                    <textarea 
+                      rows="4" 
+                      placeholder="Type official architectural/engineering response..."
+                      value={editForm.response}
+                      onChange={(e) => setEditForm({ ...editForm, response: e.target.value })}
+                      class="w-full p-3 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-amber-500 placeholder-slate-600"
+                    ></textarea>
+                  </div>
+
+                  <div class="flex items-center justify-between pt-4 border-t border-slate-800">
+                    <div>
+                      <label class="block text-xs font-medium text-slate-400 mb-1">Update RFI Status</label>
+                      <select 
+                        value={editForm.status}
+                        onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
+                        class="bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded-lg px-3 py-2 focus:outline-none focus:border-amber-500"
+                      >
+                        <option value="Open">Open</option>
+                        <option value="Pending Review">Pending Review</option>
+                        <option value="Closed">Closed</option>
+                      </select>
+                    </div>
+
+                    <div class="flex items-center space-x-3">
+                      <button 
+                        onClick={() => setIsDeleteConfirmOpen(true)}
+                        class="px-4 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 font-semibold text-xs rounded-lg transition-colors inline-flex items-center"
+                      >
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5 mr-1.5"></i>
+                        Delete RFI
+                      </button>
+
+                      <button 
+                        onClick={() => setIsModalOpen(false)}
+                        class="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-slate-200"
+                      >
+                        Cancel
+                      </button>
+
+                      <button 
+                        onClick={handleSaveAttempt}
+                        class="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-lg shadow transition-colors"
+                      >
+                        Save & Update
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Response Date Selection Popup */}
+          {isResponseDateModalOpen && (
+            <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+              <div class="bg-slate-900 border border-slate-700 rounded-xl p-6 max-w-md w-full shadow-2xl">
+                <div class="w-12 h-12 bg-emerald-500/10 border border-emerald-500/30 rounded-full flex items-center justify-center mx-auto mb-4 text-emerald-400">
+                  <i data-lucide="calendar" class="w-6 h-6"></i>
+                </div>
+                <h3 class="text-lg font-bold text-white text-center mb-2">Set RFI Response Date</h3>
+                <p class="text-xs text-slate-400 text-center mb-4">
+                  This RFI is being set to <strong>Closed</strong>. Please confirm the response date.
+                </p>
+                <div class="mb-6">
+                  <label class="block text-xs font-semibold text-slate-300 mb-1">RFI Response Date *</label>
+                  <input 
+                    type="date" 
+                    required
+                    value={pendingResponseDate}
+                    onChange={(e) => setPendingResponseDate(e.target.value)}
+                    class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+                <div class="flex justify-end space-x-3">
+                  <button 
+                    onClick={() => setIsResponseDateModalOpen(false)}
+                    class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={handleConfirmResponseDate}
+                    class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-slate-950 text-xs font-bold rounded-lg shadow"
+                  >
+                    Confirm Date
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Save Confirmation Popup */}
+          {isSaveConfirmOpen && (
+            <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+              <div class="bg-slate-900 border border-slate-700 rounded-xl p-6 max-w-md w-full shadow-2xl text-center">
+                <div class="w-12 h-12 bg-amber-500/10 border border-amber-500/30 rounded-full flex items-center justify-center mx-auto mb-4 text-amber-400">
+                  <i data-lucide="save" class="w-6 h-6"></i>
+                </div>
+                <h3 class="text-lg font-bold text-white mb-2">Confirm Save Changes</h3>
+                <p class="text-xs text-slate-400 mb-6">Are you sure you want to save and apply the updated information to this RFI record?</p>
+                <div class="flex justify-center space-x-3">
+                  <button 
+                    onClick={() => setIsSaveConfirmOpen(false)}
+                    class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={handleConfirmSave}
+                    class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold rounded-lg shadow"
+                  >
+                    Confirm Save
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Delete Confirmation Popup */}
+          {isDeleteConfirmOpen && (
+            <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+              <div class="bg-slate-900 border border-slate-700 rounded-xl p-6 max-w-md w-full shadow-2xl text-center">
+                <div class="w-12 h-12 bg-rose-500/10 border border-rose-500/30 rounded-full flex items-center justify-center mx-auto mb-4 text-rose-400">
+                  <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+                </div>
+                <h3 class="text-lg font-bold text-white mb-2">Confirm RFI Deletion</h3>
+                <p class="text-xs text-slate-400 mb-6">Are you sure you want to permanently delete this RFI record? This action cannot be undone.</p>
+                <div class="flex justify-center space-x-3">
+                  <button 
+                    onClick={() => setIsDeleteConfirmOpen(false)}
+                    class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={handleConfirmDelete}
+                    class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg shadow"
+                  >
+                    Permanently Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Create New RFI Modal */}
+          {isCreateModalOpen && (
+            <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+              <div class="bg-slate-900 border border-slate-700 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+                <div class="flex items-center justify-between p-5 border-b border-slate-800">
+                  <h3 class="text-lg font-bold text-white">Create New RFI Request</h3>
+                  <button onClick={() => setIsCreateModalOpen(false)} class="text-slate-400 hover:text-white">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                  </button>
+                </div>
+
+                <form onSubmit={handleCreateRFI} class="p-6 space-y-4">
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">RFI Subject / Title *</label>
+                    <input 
+                      type="text" 
+                      required
+                      placeholder="e.g. Beam Web Penetration Conflict"
+                      value={newRfi.title}
+                      onChange={(e) => setNewRfi({...newRfi, title: e.target.value})}
+                      class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+
+                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <label class="block text-xs font-semibold text-slate-300 mb-1">Spec / Drawing Ref *</label>
+                      <input 
+                        type="text" 
+                        required
+                        placeholder="e.g. Spec 051200 / Dwg S-101"
+                        value={newRfi.specRef}
+                        onChange={(e) => setNewRfi({...newRfi, specRef: e.target.value})}
+                        class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-amber-500"
+                      />
+                    </div>
+                    <div>
+                      <label class="block text-xs font-semibold text-slate-300 mb-1">Grid / Location *</label>
+                      <input 
+                        type="text" 
+                        required
+                        placeholder="e.g. Grid C-3, Level 2"
+                        value={newRfi.gridLocation}
+                        onChange={(e) => setNewRfi({...newRfi, gridLocation: e.target.value})}
+                        class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-amber-500"
+                      />
+                    </div>
+                    <div>
+                      <label class="block text-xs font-semibold text-slate-300 mb-1">RFI Submission Date *</label>
+                      <input 
+                        type="date" 
+                        required
+                        value={newRfi.dateIssued}
+                        onChange={(e) => setNewRfi({...newRfi, dateIssued: e.target.value})}
+                        class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-amber-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label class="block text-xs font-semibold text-slate-300 mb-1">Requesting Firm *</label>
+                      <input 
+                        type="text" 
+                        required
+                        placeholder="e.g. Apex Steel Fabricators"
+                        value={newRfi.requestor}
+                        onChange={(e) => setNewRfi({...newRfi, requestor: e.target.value})}
+                        class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-amber-500"
+                      />
+                    </div>
+                    <div>
+                      <label class="block text-xs font-semibold text-slate-300 mb-1">Recipient *</label>
+                      <input 
+                        type="text" 
+                        required
+                        placeholder="e.g. Structural Engineer (EOR)"
+                        value={newRfi.recipient}
+                        onChange={(e) => setNewRfi({...newRfi, recipient: e.target.value})}
+                        class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-amber-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Detailed Problem Description *</label>
+                    <textarea 
+                      rows="3" 
+                      required
+                      placeholder="Describe field conflict or ambiguity clearly..."
+                      value={newRfi.description}
+                      onChange={(e) => setNewRfi({...newRfi, description: e.target.value})}
+                      class="w-full p-3 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-amber-500"
+                    ></textarea>
+                  </div>
+
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Suggested Solution (Optional)</label>
+                    <textarea 
+                      rows="2" 
+                      placeholder="Provide recommended field fix or sketch reference..."
+                      value={newRfi.proposedSolution}
+                      onChange={(e) => setNewRfi({...newRfi, proposedSolution: e.target.value})}
+                      class="w-full p-3 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-amber-500"
+                    ></textarea>
+                  </div>
+
+                  <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-800">
+                    <button 
+                      type="button"
+                      onClick={() => setIsCreateModalOpen(false)}
+                      class="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-slate-200"
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      type="submit"
+                      class="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-lg shadow transition-colors"
+                    >
+                      Submit RFI
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<RFIDashboard />);
+  </script>
+</body>
+</html>
